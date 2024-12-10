@@ -206,6 +206,141 @@ def add_order():
         return jsonify({"message": "Order added successfully"}), 201
     except Exception as e:
         return handle_error(f"An error occurred: {str(e)}", 500)
+    
+# PUT
+@app.route("/authors/<int:author_id>", methods=["PUT"])
+def update_author(author_id):
+    data = request.get_json()
+
+    if not data or (not data.get("author_FirstName") and not data.get("author_LastName")):
+        return handle_error("At least one of 'author_FirstName' or 'author_LastName' must be provided", 400)
+
+    author_FirstName = data.get("author_FirstName")
+    author_LastName = data.get("author_LastName")
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        query = """
+        UPDATE Authors 
+        SET author_FirstName = %s, author_LastName = %s 
+        WHERE author_ID = %s
+        """
+        
+        cursor.execute(query, (author_FirstName if author_FirstName else "", 
+                               author_LastName if author_LastName else "", 
+                               author_id))
+        mysql.connection.commit()
+        
+        if cursor.rowcount == 0:
+            return handle_error("Author not found", 404)
+
+        return jsonify({"message": "Author updated successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+    
+@app.route("/books/<int:book_id>", methods=["PUT"])
+def update_book(book_id):
+    data = request.get_json()
+
+    if not data or (not data.get("book_Title") and not data.get("ISBN") and not data.get("author_ID") and not data.get("publication_Date")):
+        return handle_error("At least one of 'book_Title', 'ISBN', 'author_ID', or 'publication_Date' must be provided", 400)
+
+    book_Title = data.get("book_Title")
+    author_ID = data.get("author_ID")
+    ISBN = data.get("ISBN")
+    publication_Date = data.get("publication_Date")
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        query = """
+        UPDATE Books
+        SET book_Title = %s, author_ID = %s, ISBN = %s, publication_Date = %s
+        WHERE book_ID = %s
+        """
+        
+        cursor.execute(query, (book_Title if book_Title else "", 
+                               author_ID if author_ID else "", 
+                               ISBN if ISBN else "", 
+                               publication_Date if publication_Date else "", 
+                               book_id))
+        mysql.connection.commit()
+        
+        if cursor.rowcount == 0:
+            return handle_error("Book not found", 404)
+
+        return jsonify({"message": "Book updated successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+    
+@app.route("/customers/<int:customer_id>", methods=["PUT"])
+def update_customer(customer_id):
+    data = request.get_json()
+
+    if not data or (not data.get("customer_Name") and not data.get("customer_Phone") and not data.get("customer_Email")):
+        return handle_error("At least one of 'customer_Name', 'customer_Phone', or 'customer_Email' must be provided", 400)
+
+    customer_Name = data.get("customer_Name")
+    customer_Phone = data.get("customer_Phone")
+    customer_Email = data.get("customer_Email")
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        query = """
+        UPDATE Customers
+        SET customer_Name = %s, customer_Phone = %s, customer_Email = %s
+        WHERE customer_ID = %s
+        """
+        
+        cursor.execute(query, (customer_Name if customer_Name else "", 
+                               customer_Phone if customer_Phone else "", 
+                               customer_Email if customer_Email else "", 
+                               customer_id))
+        mysql.connection.commit()
+        
+        if cursor.rowcount == 0:
+            return handle_error("Customer not found", 404)
+
+        return jsonify({"message": "Customer updated successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+
+@app.route("/orders/<int:order_id>", methods=["PUT"])
+def update_order(order_id):
+    data = request.get_json()
+
+    if not data or (not data.get("order_Date") and not data.get("order_Value") and not data.get("customer_ID") and not data.get("book_ID")):
+        return handle_error("At least one of 'order_Date', 'order_Value', 'customer_ID', or 'book_ID' must be provided", 400)
+
+    order_Date = data.get("order_Date")
+    order_Value = data.get("order_Value")
+    customer_ID = data.get("customer_ID")
+    book_ID = data.get("book_ID")
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        query = """
+        UPDATE Orders
+        SET order_Date = %s, order_Value = %s, customer_ID = %s, book_ID = %s
+        WHERE order_ID = %s
+        """
+        
+        cursor.execute(query, (order_Date if order_Date else "", 
+                               order_Value if order_Value else "", 
+                               customer_ID if customer_ID else "", 
+                               book_ID if book_ID else "", 
+                               order_id))
+        mysql.connection.commit()
+        
+        if cursor.rowcount == 0:
+            return handle_error("Order not found", 404)
+
+        return jsonify({"message": "Order updated successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
 
 if __name__ == '__main__':
     app.run(debug=True)
