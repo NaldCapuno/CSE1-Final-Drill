@@ -341,6 +341,83 @@ def update_order(order_id):
         return jsonify({"message": "Order updated successfully"}), 200
     except Exception as e:
         return handle_error(f"An error occurred: {str(e)}", 500)
+    
+# DELETE
+@app.route("/authors/<int:author_id>", methods=["DELETE"])
+def delete_author(author_id):
+    try:
+        cursor = mysql.connection.cursor()
+
+        update_books_query = "UPDATE Books SET author_ID = NULL WHERE author_ID = %s"
+        cursor.execute(update_books_query, (author_id,))
+        mysql.connection.commit()
+
+        delete_author_query = "DELETE FROM Authors WHERE author_ID = %s"
+        cursor.execute(delete_author_query, (author_id,))
+        mysql.connection.commit()
+
+        if cursor.rowcount == 0:
+            return handle_error("Author not found", 404)
+
+        return jsonify({"message": "Author deleted successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+    
+@app.route("/books/<int:book_id>", methods=["DELETE"])
+def delete_book(book_id):
+    try:
+        cursor = mysql.connection.cursor()
+
+        update_orders_query = "UPDATE Orders SET book_ID = NULL WHERE book_ID = %s"
+        cursor.execute(update_orders_query, (book_id,))
+        mysql.connection.commit()
+
+        delete_book_query = "DELETE FROM Books WHERE book_ID = %s"
+        cursor.execute(delete_book_query, (book_id,))
+        mysql.connection.commit()
+
+        if cursor.rowcount == 0:
+            return handle_error("Book not found", 404)
+
+        return jsonify({"message": "Book deleted successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+    
+@app.route("/customers/<int:customer_id>", methods=["DELETE"])
+def delete_customer(customer_id):
+    try:
+        cursor = mysql.connection.cursor()
+
+        update_orders_query = "UPDATE Orders SET customer_ID = NULL WHERE customer_ID = %s"
+        cursor.execute(update_orders_query, (customer_id,))
+        mysql.connection.commit()
+
+        delete_customer_query = "DELETE FROM Customers WHERE customer_ID = %s"
+        cursor.execute(delete_customer_query, (customer_id,))
+        mysql.connection.commit()
+
+        if cursor.rowcount == 0:
+            return handle_error("Customer not found", 404)
+
+        return jsonify({"message": "Customer deleted successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
+
+@app.route("/orders/<int:order_id>", methods=["DELETE"])
+def delete_order(order_id):
+    try:
+        cursor = mysql.connection.cursor()
+
+        delete_order_query = "DELETE FROM Orders WHERE order_ID = %s"
+        cursor.execute(delete_order_query, (order_id,))
+        mysql.connection.commit()
+
+        if cursor.rowcount == 0:
+            return handle_error("Order not found", 404)
+
+        return jsonify({"message": "Order deleted successfully"}), 200
+    except Exception as e:
+        return handle_error(f"An error occurred: {str(e)}", 500)
 
 if __name__ == '__main__':
     app.run(debug=True)
