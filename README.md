@@ -40,6 +40,17 @@ Environment variables needed:
 | /orders/<order_id>	| PUT	| Update an order's details |
 | /orders/<order_id>	| DELETE	| Delete an order |
 
+## Testing
+To run the tests, follow these steps:
+1. Ensure you have ```pytest``` and ```pytest-mock``` installed. You can install them with:
+```bash
+pip install pytest pytest-mock
+```
+2. Run the tests by executing the following command:
+```bash
+pytest api_test.py
+```
+
 ## Git Commit Guidelines
 Use conventional commits:
 ```bash
