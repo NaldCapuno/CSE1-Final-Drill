@@ -23,7 +23,7 @@ Environment variables needed:
 ## API Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| /	| GET	| Welcome message |
+| /	| GET	| Home page |
 | /authors	| GET	| List all authors |
 | /authors	| POST	| Add a new author |
 | /authors/<author_id>	| PUT	| Update an author's details |
