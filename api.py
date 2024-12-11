@@ -33,9 +33,12 @@ def validate_token():
         return None, handle_error("Token is invalid!", 401)
 
 # role validation
-def validate_role(current_user, required_role):
-    if current_user["role"] != required_role:
-        return handle_error("Access forbidden: insufficient role", 403)
+def validate_role(current_user, valid_roles):
+    if isinstance(valid_roles, str):
+        valid_roles = [valid_roles]
+    
+    if current_user["role"] not in valid_roles:
+        return jsonify({"error": "Unauthorized access"}), 403
     return None
 
 # users.json
@@ -108,7 +111,16 @@ def login():
 # index
 @app.route("/")
 def hello_world():
-    return "WELCOME TO BOOKSELLER DATABASE"
+    return """
+    <h1>WELCOME TO BOOKSELLER DATABASE</h1>
+    <p>This is the main page of the Bookseller Database API.</p>
+    <p>You can interact with the database through various endpoints like:</p>
+    <ul>
+        <li><a href="/authors">Authors</a></li>
+        <li><a href="/books">Books</a></li>
+    </ul>
+    <p>Use the provided routes to interact with the API. Ensure to use valid authentication tokens when necessary.</p>
+    """
 
 # GET
 @app.route("/authors")
@@ -121,8 +133,7 @@ def get_authors():
         return handle_error("No authors found", 404)
 
     authors_list = [
-        {
-            "author_ID": author[0], 
+        { 
             "author_FirstName": author[1], 
             "author_LastName": author[2]
         }
@@ -142,9 +153,7 @@ def get_books():
 
     books_list = [
         {
-            "book_ID": book[0], 
             "book_Title": book[1], 
-            "author_ID": book[2],
             "ISBN": book[3], 
             "publication_Date": book[4]
         }
@@ -155,6 +164,14 @@ def get_books():
 
 @app.route("/customers")
 def customers():
+    current_user, error = validate_token()
+    if error:
+        return error
+
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
+
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM Customers")
     customers = cursor.fetchall()
@@ -176,6 +193,14 @@ def customers():
 
 @app.route("/orders")
 def get_orders():
+    current_user, error = validate_token()
+    if error:
+        return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
+
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM Orders")
     orders = cursor.fetchall()
@@ -202,6 +227,10 @@ def add_author():
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
     
@@ -230,6 +259,10 @@ def add_book():
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
     
@@ -260,6 +293,10 @@ def add_customer():
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
     
@@ -289,6 +326,10 @@ def add_order():
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
     
@@ -320,6 +361,10 @@ def update_author(author_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
 
@@ -355,6 +400,10 @@ def update_book(book_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
 
@@ -394,6 +443,10 @@ def update_customer(customer_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
 
@@ -431,6 +484,10 @@ def update_order(order_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager', 'staff'])
+    if role_error:
+        return role_error
 
     data = request.get_json()
 
@@ -471,6 +528,10 @@ def delete_author(author_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager'])
+    if role_error:
+        return role_error
 
     try:
         cursor = mysql.connection.cursor()
@@ -495,6 +556,10 @@ def delete_book(book_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager'])
+    if role_error:
+        return role_error
 
     try:
         cursor = mysql.connection.cursor()
@@ -519,6 +584,10 @@ def delete_customer(customer_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager'])
+    if role_error:
+        return role_error
 
     try:
         cursor = mysql.connection.cursor()
@@ -543,6 +612,10 @@ def delete_order(order_id):
     current_user, error = validate_token()
     if error:
         return error
+    
+    role_error = validate_role(current_user, ['manager'])
+    if role_error:
+        return role_error
 
     try:
         cursor = mysql.connection.cursor()
