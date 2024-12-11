@@ -1,18 +1,109 @@
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
+from flask_bcrypt import Bcrypt
+import jwt, datetime, json
 
 app = Flask(__name__)
+bcrypt = Bcrypt(app)
 
 app.config["MYSQL_HOST"] = "localhost"
 app.config["MYSQL_USER"] = "root"
 app.config["MYSQL_PASSWORD"] = "root"
 app.config["MYSQL_DB"] = "booksellerdb"
+app.config["SECRET_KEY"] = "ronald"
 
 mysql = MySQL(app)
 
 # error handler
 def handle_error(error_msg, status_code):
     return jsonify({"error": error_msg}), status_code
+
+# token validation
+def validate_token():
+    token = request.headers.get("x-access-token")
+
+    if not token:
+        return None, handle_error("Token is missing!", 401)
+
+    try:
+        data = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+        current_user = {"user_id": data["user_id"], "role": data["role"]}
+        return current_user, None
+    except Exception:
+        return None, handle_error("Token is invalid!", 401)
+
+# role validation
+def validate_role(current_user, required_role):
+    if current_user["role"] != required_role:
+        return handle_error("Access forbidden: insufficient role", 403)
+    return None
+
+# users.json
+users_data = {
+    "users": []
+}
+
+def save_to_json():
+    with open("users.json", "w") as f:
+        json.dump(users_data, f)
+
+def load_from_json():
+    global users_data
+    try:
+        with open("users.json", "r") as f:
+            users_data = json.load(f)
+    except FileNotFoundError:
+        save_to_json() 
+
+# user registration
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    if not data or not data.get("username") or not data.get("password") or not data.get("role"):
+        return handle_error("Missing required fields: username, password, and role are mandatory", 400)
+
+    username = data["username"]
+    password = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
+    role = data["role"]
+
+    load_from_json()
+
+    for user in users_data["users"]:
+        if user["username"] == username:
+            return handle_error("Username already exists", 400)
+
+    new_user = {"username": username, "password": password, "role": role}
+    users_data["users"].append(new_user)
+    save_to_json()
+
+    return jsonify({"message": "User registered successfully"}), 201
+
+# user login
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    if not data or not data.get("username") or not data.get("password"):
+        return handle_error("Missing required fields: username and password are mandatory", 400)
+
+    username = data["username"]
+    password = data["password"]
+
+    load_from_json()
+
+    for user in users_data["users"]:
+        if user["username"] == username and bcrypt.check_password_hash(user["password"], password):
+            token = jwt.encode(
+                {
+                    "user_id": username,
+                    "role": user["role"],
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+                },
+                app.config["SECRET_KEY"],
+                algorithm="HS256",
+            )
+            return jsonify({"token": token}), 200
+
+    return handle_error("Invalid credentials", 401)
 
 # index
 @app.route("/")
@@ -108,6 +199,10 @@ def get_orders():
 # POST
 @app.route("/authors", methods=["POST"])
 def add_author():
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
     
     if not data or not data.get("author_FirstName") or not data.get("author_LastName"):
@@ -132,6 +227,10 @@ def add_author():
 
 @app.route("/books", methods = ["POST"])
 def add_book():
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
     
     if not data or not data.get("book_Title") or not data.get("ISBN"):
@@ -158,6 +257,10 @@ def add_book():
     
 @app.route("/customers", methods = ["POST"])
 def add_customer():
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
     
     if not data or not data.get("customer_Name") or not data.get("customer_Phone"):
@@ -183,6 +286,10 @@ def add_customer():
     
 @app.route("/orders", methods = ["POST"])
 def add_order():
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
     
     if not data or not data.get("order_Date") or not data.get("order_Value") or not data.get("customer_ID") or not data.get("book_ID"):
@@ -210,6 +317,10 @@ def add_order():
 # PUT
 @app.route("/authors/<int:author_id>", methods=["PUT"])
 def update_author(author_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
 
     if not data or (not data.get("author_FirstName") and not data.get("author_LastName")):
@@ -241,6 +352,10 @@ def update_author(author_id):
     
 @app.route("/books/<int:book_id>", methods=["PUT"])
 def update_book(book_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
 
     if not data or (not data.get("book_Title") and not data.get("ISBN") and not data.get("author_ID") and not data.get("publication_Date")):
@@ -276,6 +391,10 @@ def update_book(book_id):
     
 @app.route("/customers/<int:customer_id>", methods=["PUT"])
 def update_customer(customer_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
 
     if not data or (not data.get("customer_Name") and not data.get("customer_Phone") and not data.get("customer_Email")):
@@ -309,6 +428,10 @@ def update_customer(customer_id):
 
 @app.route("/orders/<int:order_id>", methods=["PUT"])
 def update_order(order_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     data = request.get_json()
 
     if not data or (not data.get("order_Date") and not data.get("order_Value") and not data.get("customer_ID") and not data.get("book_ID")):
@@ -345,6 +468,10 @@ def update_order(order_id):
 # DELETE
 @app.route("/authors/<int:author_id>", methods=["DELETE"])
 def delete_author(author_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     try:
         cursor = mysql.connection.cursor()
 
@@ -365,6 +492,10 @@ def delete_author(author_id):
     
 @app.route("/books/<int:book_id>", methods=["DELETE"])
 def delete_book(book_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     try:
         cursor = mysql.connection.cursor()
 
@@ -385,6 +516,10 @@ def delete_book(book_id):
     
 @app.route("/customers/<int:customer_id>", methods=["DELETE"])
 def delete_customer(customer_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     try:
         cursor = mysql.connection.cursor()
 
@@ -405,6 +540,10 @@ def delete_customer(customer_id):
 
 @app.route("/orders/<int:order_id>", methods=["DELETE"])
 def delete_order(order_id):
+    current_user, error = validate_token()
+    if error:
+        return error
+
     try:
         cursor = mysql.connection.cursor()
 
