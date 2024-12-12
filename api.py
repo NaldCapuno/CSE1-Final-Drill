@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
-import jwt, datetime, json
+import jwt, datetime, json, os
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -42,18 +42,21 @@ def validate_role(current_user, valid_roles):
     return None
 
 # users.json
+script_dir = os.path.dirname(os.path.abspath(__file__))
+json_file_path = os.path.join(script_dir, "users.json")
+
 users_data = {
     "users": []
 }
 
 def save_to_json():
-    with open("users.json", "w") as f:
+    with open(json_file_path, "w") as f:
         json.dump(users_data, f)
 
 def load_from_json():
     global users_data
     try:
-        with open("users.json", "r") as f:
+        with open(json_file_path, "r") as f:
             users_data = json.load(f)
     except FileNotFoundError:
         save_to_json() 
